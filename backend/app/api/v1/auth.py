@@ -77,8 +77,7 @@ async def oauth_callback(
     code: Optional[str] = Query(None, description="Authorization code from Microsoft"),
     state: Optional[str] = Query(None, description="State parameter (yacht_id)"),
     error: Optional[str] = Query(None, description="Error from OAuth provider"),
-    error_description: Optional[str] = Query(None, description="Error description"),
-    db: Session = Depends(get_db)
+    error_description: Optional[str] = Query(None, description="Error description")
 ):
     """
     OAuth 2.0 callback endpoint
@@ -131,7 +130,6 @@ async def oauth_callback(
 
         # Store tokens in database
         connection = token_manager.store_tokens(
-            db=db,
             yacht_id=yacht_id,
             user_principal_name=user_principal_name,
             access_token=access_token,
@@ -142,9 +140,9 @@ async def oauth_callback(
         logger.info(f"Successfully connected OneDrive for yacht {yacht_id}, user {user_principal_name}")
 
         # Redirect to frontend dashboard
-        frontend_url = settings.cors_origins[0]  # First CORS origin is frontend
+        connection_id = connection.get('id', '')
         return RedirectResponse(
-            url=f"{frontend_url}/dashboard?connected=true&connection_id={connection.id}"
+            url=f"https://digest.celeste7.ai/dashboard?connected=true&connection_id={connection_id}"
         )
 
     except HTTPException:

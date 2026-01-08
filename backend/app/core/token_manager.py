@@ -28,18 +28,16 @@ class TokenManager:
 
     def store_tokens(
         self,
-        db: Session,
         yacht_id: str,
         user_principal_name: str,
         access_token: str,
         refresh_token: str,
         expires_in: int
-    ) -> OneDriveConnection:
+    ) -> dict:
         """
-        Store OAuth tokens encrypted in database
+        Store OAuth tokens encrypted in database using Supabase REST API
 
         Args:
-            db: Database session
             yacht_id: Yacht identifier
             user_principal_name: Microsoft user email
             access_token: OAuth access token
@@ -47,44 +45,55 @@ class TokenManager:
             expires_in: Token expiry in seconds
 
         Returns:
-            OneDriveConnection record
+            Connection record dict
         """
+        from app.db.supabase_client import get_supabase
+
         # Calculate expiry time
-        token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+        token_expires_at = (datetime.utcnow() + timedelta(seconds=expires_in)).isoformat()
 
         # Encrypt tokens
         access_token_encrypted = self.encryption.encrypt_token(access_token)
         refresh_token_encrypted = self.encryption.encrypt_token(refresh_token)
 
-        # Check if connection exists
-        connection = db.query(OneDriveConnection).filter(
-            OneDriveConnection.yacht_id == yacht_id,
-            OneDriveConnection.user_principal_name == user_principal_name
-        ).first()
+        supabase = get_supabase()
 
-        if connection:
+        # Check if connection exists
+        result = supabase.table('onedrive_connections')\
+            .select('*')\
+            .eq('yacht_id', yacht_id)\
+            .eq('user_principal_name', user_principal_name)\
+            .execute()
+
+        if result.data and len(result.data) > 0:
             # Update existing connection
-            connection.access_token_encrypted = access_token_encrypted
-            connection.refresh_token_encrypted = refresh_token_encrypted
-            connection.token_expires_at = token_expires_at
-            connection.sync_enabled = True
+            connection_id = result.data[0]['id']
+            updated = supabase.table('onedrive_connections')\
+                .update({
+                    'access_token_encrypted': access_token_encrypted,
+                    'refresh_token_encrypted': refresh_token_encrypted,
+                    'token_expires_at': token_expires_at,
+                    'sync_enabled': True,
+                    'last_sync_at': datetime.utcnow().isoformat()
+                })\
+                .eq('id', connection_id)\
+                .execute()
             logger.info(f"Updated tokens for yacht {yacht_id}, user {user_principal_name}")
+            return updated.data[0] if updated.data else {}
         else:
             # Create new connection
-            connection = OneDriveConnection(
-                yacht_id=yacht_id,
-                user_principal_name=user_principal_name,
-                access_token_encrypted=access_token_encrypted,
-                refresh_token_encrypted=refresh_token_encrypted,
-                token_expires_at=token_expires_at,
-                sync_enabled=True
-            )
-            db.add(connection)
+            new_connection = supabase.table('onedrive_connections')\
+                .insert({
+                    'yacht_id': yacht_id,
+                    'user_principal_name': user_principal_name,
+                    'access_token_encrypted': access_token_encrypted,
+                    'refresh_token_encrypted': refresh_token_encrypted,
+                    'token_expires_at': token_expires_at,
+                    'sync_enabled': True
+                })\
+                .execute()
             logger.info(f"Created new connection for yacht {yacht_id}, user {user_principal_name}")
-
-        db.commit()
-        db.refresh(connection)
-        return connection
+            return new_connection.data[0] if new_connection.data else {}
 
     def get_access_token(
         self,
