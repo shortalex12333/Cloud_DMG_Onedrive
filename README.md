@@ -282,19 +282,21 @@ Tracks batch sync operations.
 - [x] Create Alembic migration for OneDrive tables
 - [x] Document Azure app registration
 
-### Week 2: OAuth & Microsoft Graph Integration (In Progress)
-- [ ] Implement OAuth 2.0 flow endpoints
-- [ ] Build token manager with encryption
-- [ ] Create Microsoft Graph API client wrapper
-- [ ] Implement automatic token refresh
-- [ ] Build frontend OAuth flow
+### Week 2: OAuth & Microsoft Graph Integration ✅ COMPLETE
+- [x] Implement OAuth 2.0 flow endpoints (connect, callback, disconnect)
+- [x] Build token manager with Fernet encryption
+- [x] Create Microsoft Graph API client wrapper
+- [x] Implement automatic token refresh
+- [x] Build frontend OAuth components (ConnectButton, useConnection hook)
+- [x] Test OAuth flow end-to-end
 
-### Week 3: File Browser & Sync Engine (Planned)
-- [ ] Build OneDrive file enumeration
-- [ ] Port metadata extraction logic
-- [ ] Create sync manager
-- [ ] Build file browser UI
+### Week 3: File Browser & Sync Engine (Next)
+- [ ] Build OneDrive file enumeration endpoints
+- [ ] Port metadata extraction logic from NAS system
+- [ ] Create sync manager with Redis queue
+- [ ] Build file browser UI component
 - [ ] Integrate with existing document processing
+- [ ] Real-time sync progress tracking
 
 ---
 

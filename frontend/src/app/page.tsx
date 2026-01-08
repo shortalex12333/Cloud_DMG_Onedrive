@@ -15,12 +15,15 @@ export default function Home() {
             Connect your OneDrive account to start syncing documents to CelesteOS
           </p>
 
-          <button className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 rounded-md font-medium">
-            Connect OneDrive
-          </button>
+          <a
+            href="/dashboard"
+            className="inline-block bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 rounded-md font-medium"
+          >
+            Go to Dashboard
+          </a>
 
           <p className="text-xs text-muted-foreground mt-6">
-            Week 2 implementation: OAuth flow will be added here
+            Week 2: OAuth flow implemented ✅
           </p>
         </div>
 
