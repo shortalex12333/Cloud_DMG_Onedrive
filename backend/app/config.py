@@ -17,7 +17,15 @@ class Settings(BaseSettings):
     azure_tenant_id: str = os.getenv("AZURE_TENANT_ID", "")
     azure_client_id: str = os.getenv("AZURE_CLIENT_ID", "")
     azure_client_secret: str = os.getenv("AZURE_CLIENT_SECRET", "")
-    azure_redirect_uri: str = os.getenv("AZURE_REDIRECT_URI", "http://localhost:3000/api/v1/auth/callback")
+
+    @property
+    def azure_redirect_uri(self) -> str:
+        """Return Azure redirect URI based on environment"""
+        # Always use production URL on Render
+        if os.getenv("RENDER"):
+            return "https://digest.celeste7.ai/api/v1/auth/callback"
+        # Otherwise use env var or localhost default
+        return os.getenv("AZURE_REDIRECT_URI", "http://localhost:3000/api/v1/auth/callback")
 
     @property
     def azure_scopes(self) -> list:
