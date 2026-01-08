@@ -4,14 +4,14 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { ConnectButton } from '@/components/auth/ConnectButton';
 import { FileBrowser } from '@/components/files/FileBrowser';
 import { SyncStatusCard } from '@/components/sync/SyncStatusCard';
 import { useConnection } from '@/lib/hooks/useConnection';
 import { apiClient } from '@/lib/api-client';
 
-export default function Dashboard() {
+function DashboardContent() {
   const searchParams = useSearchParams();
   const [showSuccess, setShowSuccess] = useState(false);
   const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
@@ -124,5 +124,13 @@ export default function Dashboard() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background p-8 flex items-center justify-center">Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }
