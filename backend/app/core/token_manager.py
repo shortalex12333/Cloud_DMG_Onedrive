@@ -126,7 +126,13 @@ class TokenManager:
         connection = result.data[0]
 
         # Check if token is expired or expires within 5 minutes
+        # Parse token expiry time (may be timezone-aware)
         token_expires_at = parser.parse(connection['token_expires_at'])
+
+        # Make comparison timezone-naive to avoid comparison errors
+        if token_expires_at.tzinfo is not None:
+            token_expires_at = token_expires_at.replace(tzinfo=None)
+
         if datetime.utcnow() + timedelta(minutes=5) >= token_expires_at:
             logger.info(f"Token expired or expiring soon for connection {connection_id}, refreshing...")
             return self.refresh_access_token(connection)
