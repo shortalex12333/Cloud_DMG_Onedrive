@@ -1,4 +1,4 @@
-"""OAuth token management with automatic refresh"""
+"""OAuth token management with automatic refresh and timezone handling"""
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 from sqlalchemy.orm import Session
