@@ -126,24 +126,23 @@ class TokenManager:
         connection = result.data[0]
 
         # Check if token is expired or expires within 5 minutes
+        # Use Unix timestamps to avoid timezone comparison issues
         try:
-            # Parse token expiry time (may be timezone-aware)
+            # Parse token expiry time and convert to Unix timestamp
             token_expires_at = parser.parse(connection['token_expires_at'])
+            expiry_timestamp = token_expires_at.timestamp()
 
-            # Make both datetimes timezone-naive to avoid comparison errors
-            # Strip timezone info from parsed timestamp
-            if token_expires_at.tzinfo is not None:
-                token_expires_at = token_expires_at.replace(tzinfo=None)
+            # Get current time as Unix timestamp (always UTC, no timezone issues)
+            import time
+            current_timestamp = time.time()
 
-            # Get current time as timezone-naive
-            now_utc = datetime.utcnow()
-
-            if now_utc + timedelta(minutes=5) >= token_expires_at:
+            # Add 5 minutes buffer (300 seconds)
+            if current_timestamp + 300 >= expiry_timestamp:
                 logger.info(f"Token expired or expiring soon for connection {connection_id}, refreshing...")
                 return self.refresh_access_token(connection)
-        except TypeError as e:
-            # If datetime comparison fails, assume token is expired and refresh
-            logger.warning(f"DateTime comparison error (assuming expired): {e}")
+        except (TypeError, AttributeError, ValueError) as e:
+            # If any datetime operation fails, assume token is expired and refresh
+            logger.warning(f"DateTime handling error (assuming expired): {e}")
             return self.refresh_access_token(connection)
 
         # Token still valid, decrypt and return
