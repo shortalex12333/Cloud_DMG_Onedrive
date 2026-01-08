@@ -45,8 +45,7 @@ class FileMetadata(BaseModel):
 @router.get("/browse", response_model=FileListResponse)
 async def browse_onedrive(
     connection_id: str = Query(..., description="Connection ID"),
-    path: str = Query("/", description="Folder path to browse"),
-    db: Session = Depends(get_db)
+    path: str = Query("/", description="Folder path to browse")
 ):
     """
     Browse OneDrive files and folders
@@ -57,7 +56,7 @@ async def browse_onedrive(
         token_manager = get_token_manager()
 
         # Get valid access token (auto-refreshes if needed)
-        access_token = token_manager.get_access_token(db, connection_id)
+        access_token = token_manager.get_access_token(connection_id)
         if not access_token:
             raise HTTPException(status_code=401, detail="Failed to get valid access token")
 
