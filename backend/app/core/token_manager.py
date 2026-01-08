@@ -108,12 +108,16 @@ class TokenManager:
         Returns:
             Valid access token or None if refresh fails
         """
+        logger.info(f"[TOKEN_MANAGER] get_access_token called for connection {connection_id}")
+
         from app.db.supabase_client import get_supabase
         from dateutil import parser
+        import time
 
         supabase = get_supabase()
 
         # Get connection
+        logger.info(f"[TOKEN_MANAGER] Fetching connection from Supabase...")
         result = supabase.table('onedrive_connections')\
             .select('*')\
             .eq('id', connection_id)\
@@ -124,24 +128,32 @@ class TokenManager:
             return None
 
         connection = result.data[0]
+        logger.info(f"[TOKEN_MANAGER] Connection found. token_expires_at raw value: {connection.get('token_expires_at')}")
 
         # Check if token is expired or expires within 5 minutes
         # Use Unix timestamps to avoid timezone comparison issues
         try:
+            logger.info(f"[TOKEN_MANAGER] Parsing expiry timestamp...")
             # Parse token expiry time and convert to Unix timestamp
             token_expires_at = parser.parse(connection['token_expires_at'])
+            logger.info(f"[TOKEN_MANAGER] Parsed datetime: {token_expires_at}, tzinfo: {token_expires_at.tzinfo}")
+
             expiry_timestamp = token_expires_at.timestamp()
+            logger.info(f"[TOKEN_MANAGER] Expiry Unix timestamp: {expiry_timestamp}")
 
             # Get current time as Unix timestamp (always UTC, no timezone issues)
-            import time
             current_timestamp = time.time()
+            logger.info(f"[TOKEN_MANAGER] Current Unix timestamp: {current_timestamp}")
 
             # Add 5 minutes buffer (300 seconds)
             if current_timestamp + 300 >= expiry_timestamp:
                 logger.info(f"Token expired or expiring soon for connection {connection_id}, refreshing...")
                 return self.refresh_access_token(connection)
-        except (TypeError, AttributeError, ValueError) as e:
-            # If any datetime operation fails, assume token is expired and refresh
+
+            logger.info(f"[TOKEN_MANAGER] Token still valid, not expired")
+        except Exception as e:
+            # Catch ALL exceptions to see what's happening
+            logger.error(f"[TOKEN_MANAGER] Exception during token expiry check: {type(e).__name__}: {e}", exc_info=True)
             logger.warning(f"DateTime handling error (assuming expired): {e}")
             return self.refresh_access_token(connection)
 
