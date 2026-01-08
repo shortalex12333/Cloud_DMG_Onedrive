@@ -279,6 +279,59 @@ async def connection_health_check(
         }
 
 
+@router.get("/check-onedrive-ready")
+async def check_onedrive_ready(
+    connection_id: str = Query(..., description="Connection ID")
+):
+    """
+    Check if OneDrive for Business is provisioned and ready to use
+
+    Returns provisioning status and helpful instructions if not ready
+    """
+    try:
+        token_manager = get_token_manager()
+        access_token = token_manager.get_access_token(connection_id)
+
+        if not access_token:
+            raise HTTPException(status_code=401, detail="Failed to get valid token")
+
+        graph_client = create_graph_client(access_token)
+
+        # Try to check OneDrive provisioning
+        try:
+            drive_info = graph_client.check_onedrive_provisioned()
+            return {
+                "ready": True,
+                "drive_type": drive_info.get("driveType"),
+                "owner": drive_info.get("owner", {}).get("user", {}).get("displayName"),
+                "message": "OneDrive is provisioned and ready to use"
+            }
+        except Exception as provision_error:
+            error_msg = str(provision_error)
+
+            # Check if it's a provisioning issue
+            if "not provisioned" in error_msg.lower() or "personal site" in error_msg.lower():
+                return {
+                    "ready": False,
+                    "error": error_msg,
+                    "instructions": [
+                        "1. Go to https://office.com and sign in",
+                        "2. Click the OneDrive icon/tile",
+                        "3. Wait 10-15 minutes for OneDrive to be set up",
+                        "4. Refresh this page and try again"
+                    ]
+                }
+
+            # Other error
+            raise HTTPException(status_code=502, detail=f"OneDrive check failed: {error_msg}")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"OneDrive ready check failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Check failed: {str(e)}")
+
+
 @router.get("/test-token")
 async def test_token(
     connection_id: str = Query(..., description="Connection ID")

@@ -87,6 +87,25 @@ class GraphClient:
         """
         return self._make_request("GET", "/me")
 
+    def check_onedrive_provisioned(self) -> Dict[str, Any]:
+        """
+        Check if OneDrive for Business is provisioned for this user
+
+        Returns:
+            Drive metadata if provisioned, raises error if not
+        """
+        try:
+            result = self._make_request("GET", "/me/drive")
+            return result
+        except GraphAPIError as e:
+            if "403" in str(e) and "personal site" in str(e).lower():
+                raise GraphAPIError(
+                    "OneDrive for Business not provisioned. "
+                    "Please visit https://office.com, click the OneDrive icon, "
+                    "and wait 10-15 minutes for provisioning to complete."
+                )
+            raise
+
     def list_root_items(self) -> List[Dict[str, Any]]:
         """
         List items in OneDrive root folder
@@ -94,6 +113,13 @@ class GraphClient:
         Returns:
             List of files and folders
         """
+        # Check if OneDrive is provisioned first
+        try:
+            self.check_onedrive_provisioned()
+        except GraphAPIError as e:
+            # Re-raise with helpful message
+            raise
+
         result = self._make_request("GET", "/me/drive/root/children")
         return result.get("value", [])
 
