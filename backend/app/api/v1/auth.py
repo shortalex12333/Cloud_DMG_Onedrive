@@ -39,8 +39,7 @@ class ConnectionStatus(BaseModel):
 
 @router.post("/connect", response_model=ConnectResponse)
 async def connect_onedrive(
-    request: ConnectRequest,
-    db: Session = Depends(get_db)
+    request: ConnectRequest
 ):
     """
     Initiate OAuth 2.0 flow for OneDrive connection

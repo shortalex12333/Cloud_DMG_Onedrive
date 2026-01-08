@@ -2,6 +2,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
@@ -10,10 +13,14 @@ app = FastAPI(
     version="0.1.0"
 )
 
+# Log CORS configuration on startup
+cors_origins = settings.cors_origins
+logger.info(f"Configuring CORS with origins: {cors_origins}")
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,6 +44,16 @@ async def health_check():
         "status": "healthy",
         "service": "onedrive-integration",
         "version": "0.1.0"
+    }
+
+
+@app.get("/debug/cors")
+async def debug_cors():
+    """Debug endpoint to check CORS configuration"""
+    return {
+        "cors_origins": settings.cors_origins,
+        "cors_origins_type": type(settings.cors_origins).__name__,
+        "cors_origins_count": len(settings.cors_origins)
     }
 
 
