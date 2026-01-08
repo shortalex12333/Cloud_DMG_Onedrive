@@ -47,10 +47,29 @@ class Settings(BaseSettings):
     redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
     # CORS Origins (for frontend)
-    cors_origins: List[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ]
+    @property
+    def cors_origins(self) -> List[str]:
+        """Return CORS origins from environment or defaults"""
+        env_origins = os.getenv("CORS_ORIGINS", "")
+        if env_origins:
+            origins = [origin.strip() for origin in env_origins.split(",")]
+        else:
+            origins = [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+            ]
+
+        # Always include production URLs
+        production_urls = [
+            "https://celesteos-onedrive-portal.onrender.com",
+            "https://cloud.celeste7.ai"
+        ]
+
+        for url in production_urls:
+            if url not in origins:
+                origins.append(url)
+
+        return origins
 
     class Config:
         env_file = ".env"
