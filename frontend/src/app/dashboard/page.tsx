@@ -9,12 +9,14 @@ import { ConnectButton } from '@/components/auth/ConnectButton';
 import { FileBrowser } from '@/components/files/FileBrowser';
 import { SyncStatusCard } from '@/components/sync/SyncStatusCard';
 import { useConnection } from '@/lib/hooks/useConnection';
+import { useConnectionWatchdog } from '@/lib/hooks/useConnectionWatchdog';
 import { apiClient } from '@/lib/api-client';
 
 function DashboardContent() {
   const searchParams = useSearchParams();
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState<string | null>(null);
+  const [showHealthWarning, setShowHealthWarning] = useState(false);
   const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -22,6 +24,21 @@ function DashboardContent() {
   // Hard-coded yacht ID for demo (in production, this would come from auth)
   const yachtId = 'demo-yacht-001';
   const { status, loading, error } = useConnection(yachtId);
+
+  // Connection health watchdog - checks every 5 minutes
+  const { isHealthy, lastCheck, error: healthError } = useConnectionWatchdog({
+    connectionId: status?.connection_id || null,
+    enabled: status?.connected || false,
+    intervalMs: 5 * 60 * 1000, // 5 minutes
+    onUnhealthy: (err) => {
+      console.warn('Connection became unhealthy:', err);
+      setShowHealthWarning(true);
+    },
+    onHealthy: () => {
+      console.log('Connection recovered');
+      setShowHealthWarning(false);
+    }
+  });
 
   useEffect(() => {
     // Check if just connected
@@ -81,6 +98,22 @@ function DashboardContent() {
             <p className="text-red-800 font-medium">
               {showError}
             </p>
+          </div>
+        )}
+
+        {showHealthWarning && isHealthy === false && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <p className="text-yellow-800 font-medium mb-2">
+              ⚠️ Connection Health Warning
+            </p>
+            <p className="text-yellow-700 text-sm">
+              Your OneDrive connection may have issues. {healthError || 'Please reconnect if uploads fail.'}
+            </p>
+            {lastCheck && (
+              <p className="text-yellow-600 text-xs mt-2">
+                Last checked: {lastCheck.toLocaleTimeString()}
+              </p>
+            )}
           </div>
         )}
 
