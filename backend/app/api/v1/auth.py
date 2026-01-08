@@ -49,9 +49,13 @@ async def connect_onedrive(
     try:
         token_manager = get_token_manager()
 
+        # Get scopes as a fresh list
+        scopes = list(settings.azure_scopes)
+        logger.info(f"Scopes type: {type(scopes)}, value: {scopes}")
+
         # Generate authorization URL with state parameter (yacht_id)
         auth_url = token_manager.client_app.get_authorization_request_url(
-            scopes=settings.azure_scopes,
+            scopes=scopes,
             redirect_uri=settings.azure_redirect_uri,
             state=request.yacht_id  # Pass yacht_id as state
         )
@@ -135,8 +139,7 @@ async def oauth_callback(
 
 @router.get("/status", response_model=ConnectionStatus)
 async def get_connection_status(
-    yacht_id: str = Query(..., description="Yacht ID"),
-    db: Session = Depends(get_db)
+    yacht_id: str = Query(..., description="Yacht ID")
 ):
     """
     Get OneDrive connection status for a yacht
@@ -144,20 +147,27 @@ async def get_connection_status(
     Returns connection details if connected
     """
     try:
-        repo = ConnectionRepository(db)
-        connections = repo.get_by_yacht_id(yacht_id)
+        from app.db.supabase_client import get_supabase
+        supabase = get_supabase()
 
-        if not connections:
+        # Query connections using Supabase REST API
+        result = supabase.table('onedrive_connections')\
+            .select('*')\
+            .eq('yacht_id', yacht_id)\
+            .eq('sync_enabled', True)\
+            .execute()
+
+        if not result.data or len(result.data) == 0:
             return ConnectionStatus(connected=False)
 
         # Return first active connection
-        connection = connections[0]
+        connection = result.data[0]
 
         return ConnectionStatus(
             connected=True,
-            user_principal_name=connection.user_principal_name,
-            connection_id=str(connection.id),
-            sync_enabled=connection.sync_enabled
+            user_principal_name=connection['user_principal_name'],
+            connection_id=connection['id'],
+            sync_enabled=connection['sync_enabled']
         )
 
     except Exception as e:

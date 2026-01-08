@@ -1,0 +1,54 @@
+services:
+  # Backend API Service
+  - type: web
+    name: celesteos-onedrive-api
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: AZURE_TENANT_ID
+        sync: false
+      - key: AZURE_CLIENT_ID
+        sync: false
+      - key: AZURE_CLIENT_SECRET
+        sync: false
+      - key: AZURE_REDIRECT_URI
+        sync: false
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: SUPABASE_URL
+        value: https://vzsohavtuotocgrfkfyd.supabase.co
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: DIGEST_SERVICE_URL
+        value: https://celeste-digest-index.onrender.com
+      - key: YACHT_SALT
+        value: e49469e09cb6529e0bfef118370cf8425b006f0abbc77475da2e0cb479af8b18
+      - key: BACKEND_PORT
+        value: 8000
+      - key: BACKEND_HOST
+        value: 0.0.0.0
+      - key: REDIS_URL
+        value: redis://red-placeholder:6379/0
+    autoDeploy: true
+
+  # Frontend Web Service
+  - type: web
+    name: celesteos-onedrive-portal
+    env: node
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+    autoDeploy: true

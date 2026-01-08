@@ -1,7 +1,13 @@
 """Application configuration"""
 import os
-from typing import Optional
+from typing import Optional, List
 from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load .env file from project root
+env_path = Path(__file__).parent.parent.parent / '.env'
+load_dotenv(env_path)
 
 
 class Settings(BaseSettings):
@@ -13,8 +19,14 @@ class Settings(BaseSettings):
     azure_client_secret: str = os.getenv("AZURE_CLIENT_SECRET", "")
     azure_redirect_uri: str = os.getenv("AZURE_REDIRECT_URI", "http://localhost:3000/api/v1/auth/callback")
 
-    # Azure AD OAuth Scopes
-    azure_scopes: list = ["Files.Read.All", "User.Read", "offline_access"]
+    @property
+    def azure_scopes(self) -> list:
+        """Return Azure AD OAuth scopes as a fresh list
+
+        Using .default scope for confidential client app.
+        This requests all permissions granted to the app registration.
+        """
+        return ["https://graph.microsoft.com/.default"]
 
     # Token Encryption
     token_encryption_key: str = os.getenv("TOKEN_ENCRYPTION_KEY", "")
@@ -35,7 +47,7 @@ class Settings(BaseSettings):
     redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
     # CORS Origins (for frontend)
-    cors_origins: list = [
+    cors_origins: List[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]
