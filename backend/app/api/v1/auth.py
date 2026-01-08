@@ -74,8 +74,10 @@ async def connect_onedrive(
 
 @router.get("/callback")
 async def oauth_callback(
-    code: str = Query(..., description="Authorization code from Microsoft"),
-    state: str = Query(..., description="State parameter (yacht_id)"),
+    code: Optional[str] = Query(None, description="Authorization code from Microsoft"),
+    state: Optional[str] = Query(None, description="State parameter (yacht_id)"),
+    error: Optional[str] = Query(None, description="Error from OAuth provider"),
+    error_description: Optional[str] = Query(None, description="Error description"),
     db: Session = Depends(get_db)
 ):
     """
@@ -83,6 +85,21 @@ async def oauth_callback(
 
     Exchanges authorization code for access token and stores in database
     """
+    # Handle OAuth errors (user cancelled, etc.)
+    if error:
+        logger.warning(f"OAuth error: {error} - {error_description}")
+        # Redirect to frontend with error
+        return RedirectResponse(
+            url=f"https://digest.celeste7.ai/dashboard?error={error}&error_description={error_description or 'Authentication cancelled'}"
+        )
+
+    # Validate required parameters
+    if not code or not state:
+        logger.error("Missing required parameters: code or state")
+        return RedirectResponse(
+            url="https://digest.celeste7.ai/dashboard?error=invalid_request&error_description=Missing required parameters"
+        )
+
     try:
         token_manager = get_token_manager()
         yacht_id = state  # State contains yacht_id

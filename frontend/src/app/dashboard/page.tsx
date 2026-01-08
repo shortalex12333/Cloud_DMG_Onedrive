@@ -14,23 +14,32 @@ import { apiClient } from '@/lib/api-client';
 function DashboardContent() {
   const searchParams = useSearchParams();
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState<string | null>(null);
   const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
 
   // Hard-coded yacht ID for demo (in production, this would come from auth)
   const yachtId = 'demo-yacht-001';
-  const { status } = useConnection(yachtId);
+  const { status, loading, error } = useConnection(yachtId);
 
   useEffect(() => {
     // Check if just connected
     const connected = searchParams.get('connected');
     const connectionId = searchParams.get('connection_id');
 
+    // Check for OAuth errors (user cancelled, etc.)
+    const oauthError = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+
     if (connected === 'true' && connectionId) {
       setShowSuccess(true);
       // Hide success message after 5 seconds
       setTimeout(() => setShowSuccess(false), 5000);
+    } else if (oauthError) {
+      setShowError(errorDescription || 'Authentication failed');
+      // Hide error message after 10 seconds
+      setTimeout(() => setShowError(null), 10000);
     }
   }, [searchParams]);
 
@@ -67,11 +76,30 @@ function DashboardContent() {
           </div>
         )}
 
+        {showError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-800 font-medium">
+              {showError}
+            </p>
+          </div>
+        )}
+
         <div className="grid gap-6">
           {/* Connection Status Card */}
           <div className="border rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Connection Status</h2>
-            <ConnectButton yachtId={yachtId} />
+
+            {loading && <p className="text-muted-foreground">Loading connection status...</p>}
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <p className="text-red-800 text-sm">
+                  Failed to get status: {error}
+                </p>
+              </div>
+            )}
+
+            {!loading && <ConnectButton yachtId={yachtId} />}
           </div>
 
           {/* File Browser (only show if connected) */}
