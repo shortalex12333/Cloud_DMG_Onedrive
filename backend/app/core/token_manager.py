@@ -16,11 +16,13 @@ class TokenManager:
     """Manages OAuth token lifecycle including refresh"""
 
     def __init__(self):
-        """Initialize MSAL client application"""
+        """Initialize MSAL client application for multi-tenant access"""
+        # Use /common endpoint to allow users from any Azure AD tenant
+        # This enables yacht clients to authenticate with their own Microsoft 365 accounts
         self.client_app = ConfidentialClientApplication(
             client_id=settings.azure_client_id,
             client_credential=settings.azure_client_secret,
-            authority=f"https://login.microsoftonline.com/{settings.azure_tenant_id}"
+            authority="https://login.microsoftonline.com/common"
         )
         self.encryption = get_encryption()
 
