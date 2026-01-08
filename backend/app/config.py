@@ -62,6 +62,7 @@ class Settings(BaseSettings):
         # Always include production URLs
         production_urls = [
             "https://celesteos-onedrive-portal.onrender.com",
+            "https://digest.celeste7.ai",  # Production frontend
             "https://cloud.celeste7.ai"
         ]
 
