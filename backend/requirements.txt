@@ -9,7 +9,7 @@ alembic==1.13.1
 psycopg2-binary==2.9.9
 
 # Supabase
-supabase==2.3.0
+supabase==2.10.0
 
 # Microsoft Graph API
 msal==1.26.0
