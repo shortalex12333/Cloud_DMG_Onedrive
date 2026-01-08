@@ -129,11 +129,15 @@ class TokenManager:
         # Parse token expiry time (may be timezone-aware)
         token_expires_at = parser.parse(connection['token_expires_at'])
 
-        # Make comparison timezone-naive to avoid comparison errors
+        # Make both datetimes timezone-naive to avoid comparison errors
+        # Strip timezone info from parsed timestamp
         if token_expires_at.tzinfo is not None:
             token_expires_at = token_expires_at.replace(tzinfo=None)
 
-        if datetime.utcnow() + timedelta(minutes=5) >= token_expires_at:
+        # Get current time as timezone-naive
+        now_utc = datetime.utcnow()
+
+        if now_utc + timedelta(minutes=5) >= token_expires_at:
             logger.info(f"Token expired or expiring soon for connection {connection_id}, refreshing...")
             return self.refresh_access_token(connection)
 
