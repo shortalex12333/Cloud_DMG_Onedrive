@@ -6,13 +6,21 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ConnectButton } from '@/components/auth/ConnectButton';
+import { FileBrowser } from '@/components/files/FileBrowser';
+import { SyncStatusCard } from '@/components/sync/SyncStatusCard';
+import { useConnection } from '@/lib/hooks/useConnection';
+import { apiClient } from '@/lib/api-client';
 
 export default function Dashboard() {
   const searchParams = useSearchParams();
   const [showSuccess, setShowSuccess] = useState(false);
+  const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   // Hard-coded yacht ID for demo (in production, this would come from auth)
   const yachtId = 'demo-yacht-001';
+  const { status } = useConnection(yachtId);
 
   useEffect(() => {
     // Check if just connected
@@ -26,9 +34,26 @@ export default function Dashboard() {
     }
   }, [searchParams]);
 
+  const handleStartSync = async () => {
+    if (!status?.connection_id || selectedFolders.length === 0) {
+      alert('Please select folders to sync');
+      return;
+    }
+
+    try {
+      setSyncing(true);
+      const job = await apiClient.startSync(status.connection_id, selectedFolders);
+      setCurrentJobId(job.job_id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to start sync');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-background p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">OneDrive Dashboard</h1>
         <p className="text-muted-foreground mb-8">
           Manage your OneDrive connection and document syncing
@@ -49,31 +74,52 @@ export default function Dashboard() {
             <ConnectButton yachtId={yachtId} />
           </div>
 
-          {/* Coming Soon Cards */}
-          <div className="border rounded-lg p-6 bg-muted/50">
-            <h2 className="text-xl font-semibold mb-4">File Browser</h2>
-            <p className="text-muted-foreground">
-              Week 3: Browse and select OneDrive folders to sync
-            </p>
-          </div>
+          {/* File Browser (only show if connected) */}
+          {status?.connected && status.connection_id && (
+            <div className="border rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Browse OneDrive</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Select folders to sync with CelesteOS
+              </p>
+              <FileBrowser
+                connectionId={status.connection_id}
+                onSelectionChange={setSelectedFolders}
+              />
 
-          <div className="border rounded-lg p-6 bg-muted/50">
-            <h2 className="text-xl font-semibold mb-4">Sync Status</h2>
-            <p className="text-muted-foreground">
-              Week 3: View real-time sync progress and history
-            </p>
-          </div>
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {selectedFolders.length} folder(s) selected
+                </p>
+                <button
+                  onClick={handleStartSync}
+                  disabled={selectedFolders.length === 0 || syncing}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {syncing ? 'Starting...' : 'Start Sync'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Sync Status (only show if there's an active job) */}
+          {currentJobId && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Current Sync</h2>
+              <SyncStatusCard jobId={currentJobId} />
+            </div>
+          )}
         </div>
 
         {/* Instructions */}
         <div className="mt-8 border rounded-lg p-6">
-          <h3 className="font-semibold mb-2">Next Steps</h3>
+          <h3 className="font-semibold mb-2">How It Works</h3>
           <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-            <li>Click "Connect OneDrive" to authorize access</li>
-            <li>Sign in with your Microsoft 365 account</li>
-            <li>Grant permissions to CelesteOS</li>
-            <li>Browse and select folders to sync (Week 3)</li>
-            <li>Monitor sync progress (Week 3)</li>
+            <li>Connect your OneDrive for Business account</li>
+            <li>Browse your OneDrive folders</li>
+            <li>Select folders containing yacht documentation</li>
+            <li>Click "Start Sync" to begin processing</li>
+            <li>Files are automatically categorized and indexed</li>
+            <li>Documents become searchable in CelesteOS</li>
           </ol>
         </div>
       </div>

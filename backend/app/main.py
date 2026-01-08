@@ -41,11 +41,8 @@ async def health_check():
 
 
 # Import and include routers
-from app.api.v1 import auth
+from app.api.v1 import auth, files, sync
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-
-# TODO: Add files and sync routers in Week 3
-# from app.api.v1 import files, sync
-# app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
-# app.include_router(sync.router, prefix="/api/v1/sync", tags=["sync"])
+app.include_router(files.router, prefix="/api/v1/files", tags=["files"])
+app.include_router(sync.router, prefix="/api/v1/sync", tags=["sync"])

@@ -290,13 +290,13 @@ Tracks batch sync operations.
 - [x] Build frontend OAuth components (ConnectButton, useConnection hook)
 - [x] Test OAuth flow end-to-end
 
-### Week 3: File Browser & Sync Engine (Next)
-- [ ] Build OneDrive file enumeration endpoints
-- [ ] Port metadata extraction logic from NAS system
-- [ ] Create sync manager with Redis queue
-- [ ] Build file browser UI component
-- [ ] Integrate with existing document processing
-- [ ] Real-time sync progress tracking
+### Week 3: File Browser & Sync Engine ✅ COMPLETE
+- [x] Build OneDrive file enumeration endpoints
+- [x] Port metadata extraction logic from NAS system
+- [x] Create sync manager with document processing integration
+- [x] Build file browser UI component
+- [x] Integrate with existing document processing (celeste-digest-index)
+- [x] Real-time sync progress tracking
 
 ---
 
