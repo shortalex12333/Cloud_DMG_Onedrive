@@ -2,7 +2,7 @@ services:
   # Backend API Service
   - type: web
     name: celesteos-onedrive-api
-    env: python
+    runtime: python
     region: oregon
     plan: free
     branch: main
