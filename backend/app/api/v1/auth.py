@@ -4,6 +4,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 import logging
 
 from app.config import settings
@@ -192,18 +193,17 @@ async def get_connection_status(
 
 @router.post("/disconnect")
 async def disconnect_onedrive(
-    connection_id: str = Query(..., description="Connection ID"),
-    db: Session = Depends(get_db)
+    connection_id: str = Query(..., description="Connection ID")
 ):
     """
-    Disconnect OneDrive and revoke tokens
+    Disconnect OneDrive and revoke tokens using Supabase REST API
 
     Deletes connection and all associated sync data
     """
     try:
         token_manager = get_token_manager()
 
-        success = token_manager.revoke_connection(db, connection_id)
+        success = token_manager.revoke_connection(connection_id)
 
         if not success:
             raise HTTPException(status_code=404, detail="Connection not found")
@@ -219,13 +219,73 @@ async def disconnect_onedrive(
         raise HTTPException(status_code=500, detail=f"Disconnect failed: {str(e)}")
 
 
-@router.get("/test-token")
-async def test_token(
-    connection_id: str = Query(..., description="Connection ID"),
-    db: Session = Depends(get_db)
+@router.get("/health-check")
+async def connection_health_check(
+    connection_id: str = Query(..., description="Connection ID")
 ):
     """
-    Test endpoint to verify token refresh works
+    Health check endpoint for connection watchdog
+
+    Verifies connection is still valid and tokens can be refreshed.
+    Can be polled periodically to detect connection issues early.
+
+    Returns:
+        - healthy: True if connection is valid and tokens work
+        - token_valid: Whether current token is valid
+        - can_refresh: Whether tokens can be refreshed
+        - error: Error message if unhealthy
+    """
+    try:
+        token_manager = get_token_manager()
+
+        # Try to get access token (will refresh if needed)
+        access_token = token_manager.get_access_token(connection_id)
+
+        if not access_token:
+            return {
+                "healthy": False,
+                "token_valid": False,
+                "can_refresh": False,
+                "error": "Failed to get valid access token - tokens may be revoked"
+            }
+
+        # Try to make a simple API call to verify token works
+        try:
+            graph_client = create_graph_client(access_token)
+            user_profile = graph_client.get_user_profile()
+
+            return {
+                "healthy": True,
+                "token_valid": True,
+                "can_refresh": True,
+                "user_email": user_profile.get("userPrincipalName"),
+                "last_checked": datetime.utcnow().isoformat()
+            }
+        except Exception as graph_error:
+            # Token exists but API call failed
+            return {
+                "healthy": False,
+                "token_valid": False,
+                "can_refresh": False,
+                "error": f"Graph API call failed: {str(graph_error)}"
+            }
+
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "healthy": False,
+            "token_valid": False,
+            "can_refresh": False,
+            "error": str(e)
+        }
+
+
+@router.get("/test-token")
+async def test_token(
+    connection_id: str = Query(..., description="Connection ID")
+):
+    """
+    Test endpoint to verify token refresh works using Supabase REST API
 
     Returns user profile from Microsoft Graph
     """
@@ -233,7 +293,7 @@ async def test_token(
         token_manager = get_token_manager()
 
         # This will automatically refresh if needed
-        access_token = token_manager.get_access_token(db, connection_id)
+        access_token = token_manager.get_access_token(connection_id)
 
         if not access_token:
             raise HTTPException(status_code=401, detail="Failed to get valid token")

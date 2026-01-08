@@ -223,38 +223,43 @@ class TokenManager:
 
     def revoke_connection(
         self,
-        db: Session,
         connection_id: str
     ) -> bool:
         """
-        Revoke connection and delete tokens
+        Revoke connection and delete tokens using Supabase REST API
 
         Args:
-            db: Database session
             connection_id: Connection UUID
 
         Returns:
             True if successful, False otherwise
         """
-        try:
-            connection = db.query(OneDriveConnection).filter(
-                OneDriveConnection.id == connection_id
-            ).first()
+        from app.db.supabase_client import get_supabase
 
-            if not connection:
+        try:
+            supabase = get_supabase()
+
+            # Check if connection exists
+            result = supabase.table('onedrive_connections')\
+                .select('id')\
+                .eq('id', connection_id)\
+                .execute()
+
+            if not result.data or len(result.data) == 0:
                 logger.error(f"Connection {connection_id} not found")
                 return False
 
-            # Delete connection (cascade will delete sync state and jobs)
-            db.delete(connection)
-            db.commit()
+            # Delete connection (cascade should delete sync state and jobs)
+            delete_result = supabase.table('onedrive_connections')\
+                .delete()\
+                .eq('id', connection_id)\
+                .execute()
 
             logger.info(f"Revoked connection {connection_id}")
             return True
 
         except Exception as e:
             logger.error(f"Failed to revoke connection: {e}")
-            db.rollback()
             return False
 
 
