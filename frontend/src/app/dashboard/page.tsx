@@ -52,6 +52,7 @@ function DashboardContent() {
     if (connected === 'true' && connectionId) {
       setShowSuccess(true);
       // SECURITY: Refresh connection status to get latest connection details
+      // Note: Don't add refresh to deps array - it causes infinite loop
       refresh();
       // Hide success message after 5 seconds
       setTimeout(() => setShowSuccess(false), 5000);
@@ -60,7 +61,8 @@ function DashboardContent() {
       // Hide error message after 10 seconds
       setTimeout(() => setShowError(null), 10000);
     }
-  }, [searchParams, refresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleStartSync = async () => {
     if (!status?.connection_id || selectedFolders.length === 0) {

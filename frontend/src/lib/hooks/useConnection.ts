@@ -3,7 +3,7 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiClient, ConnectionStatus } from '../api-client';
 
 export function useConnection(yachtId: string) {
@@ -94,8 +94,9 @@ export function useConnection(yachtId: string) {
 
   /**
    * Refresh connection status
+   * Memoized to prevent infinite loops in useEffect dependencies
    */
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     try {
       setLoading(true);
       const connectionStatus = await apiClient.getConnectionStatus(yachtId);
@@ -106,7 +107,7 @@ export function useConnection(yachtId: string) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [yachtId]);
 
   return {
     status,
