@@ -31,10 +31,19 @@ class Settings(BaseSettings):
     def azure_scopes(self) -> list:
         """Return Azure AD OAuth scopes as a fresh list
 
-        Using .default scope for confidential client app.
-        This requests all permissions granted to the app registration.
+        For DELEGATED permissions (user context OAuth), we must explicitly
+        request each scope. The .default scope is for Application permissions only.
+
+        Required delegated scopes:
+        - Files.Read.All: Read all files user can access
+        - User.Read: Read user profile
+        - offline_access: Get refresh token for token renewal
         """
-        return ["https://graph.microsoft.com/.default"]
+        return [
+            "https://graph.microsoft.com/Files.Read.All",
+            "https://graph.microsoft.com/User.Read",
+            "offline_access"
+        ]
 
     # Token Encryption
     token_encryption_key: str = os.getenv("TOKEN_ENCRYPTION_KEY", "")
