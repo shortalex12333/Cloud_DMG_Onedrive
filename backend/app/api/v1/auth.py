@@ -54,10 +54,12 @@ async def connect_onedrive(
         logger.info(f"Scopes type: {type(scopes)}, value: {scopes}")
 
         # Generate authorization URL with state parameter (yacht_id)
+        # Force account picker so users can see which account they're connecting
         auth_url = token_manager.client_app.get_authorization_request_url(
             scopes=scopes,
             redirect_uri=settings.azure_redirect_uri,
-            state=request.yacht_id  # Pass yacht_id as state
+            state=request.yacht_id,  # Pass yacht_id as state
+            prompt='select_account'  # Always show account picker - never auto-sign-in
         )
 
         logger.info(f"Generated auth URL for yacht {request.yacht_id}")
