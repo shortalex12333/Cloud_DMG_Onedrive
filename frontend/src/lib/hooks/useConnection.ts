@@ -64,6 +64,20 @@ export function useConnection(yachtId: string) {
 
       await apiClient.disconnect(status.connection_id);
 
+      // SECURITY: Clear ALL browser cache to prevent any stale data
+      // Clear localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          // Clear any cached connection data
+          localStorage.removeItem('onedrive_connection');
+          localStorage.removeItem('connection_id');
+          // Clear sessionStorage too
+          sessionStorage.clear();
+        } catch (e) {
+          console.warn('Failed to clear browser storage:', e);
+        }
+      }
+
       // SECURITY: Fully clear status to prevent stale connection_id usage
       setStatus(null);
 

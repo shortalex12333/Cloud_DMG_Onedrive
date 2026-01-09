@@ -18,6 +18,32 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("/clear-microsoft-session")
+async def clear_microsoft_session():
+    """
+    Returns Microsoft logout URL to clear all cached sessions.
+
+    This is the nuclear option - it logs user out of ALL Microsoft services
+    and clears all cached credentials. Use before connecting if you want
+    to guarantee a completely fresh authentication.
+
+    Flow: User clicks "Connect" → Frontend calls this → Redirect to Microsoft logout
+          → Microsoft logout completes → Redirect back to /connect
+    """
+    # Microsoft's logout endpoint that clears ALL session cookies
+    logout_url = "https://login.microsoftonline.com/common/oauth2/v2.0/logout"
+
+    # After logout, redirect back to our frontend
+    post_logout_redirect = "https://digest.celeste7.ai/dashboard?logout_complete=true"
+
+    full_logout_url = f"{logout_url}?post_logout_redirect_uri={post_logout_redirect}"
+
+    return {
+        "logout_url": full_logout_url,
+        "message": "Redirect user to this URL to clear all Microsoft sessions before connecting"
+    }
+
+
 class ConnectRequest(BaseModel):
     """Request to initiate OAuth connection"""
     yacht_id: str
@@ -45,6 +71,9 @@ async def connect_onedrive(
     Initiate OAuth 2.0 flow for OneDrive connection
 
     Returns authorization URL for user to grant permissions
+
+    SECURITY: Uses prompt='login' to force fresh authentication and prevent
+    auto-signin with cached Microsoft credentials.
     """
     try:
         token_manager = get_token_manager()
@@ -54,15 +83,17 @@ async def connect_onedrive(
         logger.info(f"Scopes type: {type(scopes)}, value: {scopes}")
 
         # Generate authorization URL with state parameter (yacht_id)
-        # Force account picker so users can see which account they're connecting
+        # SECURITY: Force fresh login - completely clear any cached credentials
+        # Using 'login' instead of 'select_account' to prevent auto-signin
         auth_url = token_manager.client_app.get_authorization_request_url(
             scopes=scopes,
             redirect_uri=settings.azure_redirect_uri,
             state=request.yacht_id,  # Pass yacht_id as state
-            prompt='select_account'  # Always show account picker - never auto-sign-in
+            prompt='login',  # Force re-authentication - never auto-signin with cached account
+            # Note: 'login' is stronger than 'select_account' - it forces password entry every time
         )
 
-        logger.info(f"Generated auth URL for yacht {request.yacht_id}")
+        logger.info(f"Generated auth URL for yacht {request.yacht_id} with prompt=login")
 
         return ConnectResponse(
             auth_url=auth_url,

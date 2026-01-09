@@ -53,10 +53,16 @@ export function ConnectButton({ yachtId }: ConnectButtonProps) {
         Connect OneDrive
       </button>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <p className="text-blue-800 text-sm">
-          You'll be asked to choose which Microsoft account to connect.
-          Make sure to select the correct OneDrive for Business account.
+      <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+        <p className="text-amber-900 font-medium text-sm mb-2">
+          🔒 Security Notice
+        </p>
+        <p className="text-amber-800 text-sm">
+          You will be required to sign in with your Microsoft account and enter your password.
+          This ensures you're connecting the correct OneDrive for Business account.
+        </p>
+        <p className="text-amber-700 text-xs mt-2">
+          Microsoft credentials are NEVER cached. You must authenticate every time.
         </p>
       </div>
 
