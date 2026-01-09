@@ -45,7 +45,7 @@ export function useConnectionWatchdog({
 
     try {
       const response = await fetch(
-        `${apiClient.baseURL}/auth/health-check?connection_id=${connectionId}`
+        `${apiClient.getBaseURL()}/api/v1/auth/health-check?connection_id=${connectionId}`
       );
 
       const result: HealthCheckResult = await response.json();

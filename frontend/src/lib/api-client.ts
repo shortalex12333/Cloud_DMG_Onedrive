@@ -50,6 +50,13 @@ export class APIClient {
   }
 
   /**
+   * Get base URL for manual API calls
+   */
+  getBaseURL(): string {
+    return this.baseURL;
+  }
+
+  /**
    * Auth endpoints
    */
   async connect(yachtId: string): Promise<ConnectResponse> {
