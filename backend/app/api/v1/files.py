@@ -51,6 +51,25 @@ async def browse_onedrive(
     Returns list of items in the specified path
     """
     try:
+        # SECURITY: Verify connection exists and is enabled
+        from app.db.supabase_client import get_supabase
+        supabase = get_supabase()
+        connection_check = supabase.table('onedrive_connections')\
+            .select('sync_enabled, user_principal_name')\
+            .eq('id', connection_id)\
+            .execute()
+
+        if not connection_check.data or len(connection_check.data) == 0:
+            raise HTTPException(status_code=404, detail="Connection not found")
+
+        if not connection_check.data[0].get('sync_enabled', False):
+            raise HTTPException(
+                status_code=403,
+                detail="This connection has been disabled. Please reconnect your OneDrive account."
+            )
+
+        logger.info(f"Browsing files for user: {connection_check.data[0].get('user_principal_name')}")
+
         token_manager = get_token_manager()
 
         # Get valid access token (auto-refreshes if needed)

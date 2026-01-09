@@ -23,7 +23,7 @@ function DashboardContent() {
 
   // Hard-coded yacht ID for demo (in production, this would come from auth)
   const yachtId = 'demo-yacht-001';
-  const { status, loading, error } = useConnection(yachtId);
+  const { status, loading, error, refresh } = useConnection(yachtId);
 
   // Connection health watchdog - checks every 5 minutes
   const { isHealthy, lastCheck, error: healthError } = useConnectionWatchdog({
@@ -51,6 +51,8 @@ function DashboardContent() {
 
     if (connected === 'true' && connectionId) {
       setShowSuccess(true);
+      // SECURITY: Refresh connection status to get latest connection details
+      refresh();
       // Hide success message after 5 seconds
       setTimeout(() => setShowSuccess(false), 5000);
     } else if (oauthError) {
@@ -58,7 +60,7 @@ function DashboardContent() {
       // Hide error message after 10 seconds
       setTimeout(() => setShowError(null), 10000);
     }
-  }, [searchParams]);
+  }, [searchParams, refresh]);
 
   const handleStartSync = async () => {
     if (!status?.connection_id || selectedFolders.length === 0) {

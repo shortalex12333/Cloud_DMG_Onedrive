@@ -168,17 +168,21 @@ async def get_connection_status(
         supabase = get_supabase()
 
         # Query connections using Supabase REST API
+        # SECURITY: Only return enabled connections, sorted by most recent
         result = supabase.table('onedrive_connections')\
             .select('*')\
             .eq('yacht_id', yacht_id)\
             .eq('sync_enabled', True)\
+            .order('created_at', desc=True)\
             .execute()
 
         if not result.data or len(result.data) == 0:
+            logger.info(f"No active connection found for yacht {yacht_id}")
             return ConnectionStatus(connected=False)
 
-        # Return first active connection
+        # Return most recent active connection
         connection = result.data[0]
+        logger.info(f"Active connection for yacht {yacht_id}: {connection['user_principal_name']} (ID: {connection['id']})")
 
         return ConnectionStatus(
             connected=True,

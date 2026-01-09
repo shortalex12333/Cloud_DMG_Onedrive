@@ -58,7 +58,15 @@ class TokenManager:
 
         supabase = get_supabase()
 
-        # Check if connection exists
+        # SECURITY: Disable ALL other connections for this yacht before creating/updating
+        # This ensures only ONE active connection per yacht at a time
+        logger.info(f"Disabling all existing connections for yacht {yacht_id}")
+        supabase.table('onedrive_connections')\
+            .update({'sync_enabled': False})\
+            .eq('yacht_id', yacht_id)\
+            .execute()
+
+        # Check if connection exists for this specific user
         result = supabase.table('onedrive_connections')\
             .select('*')\
             .eq('yacht_id', yacht_id)\

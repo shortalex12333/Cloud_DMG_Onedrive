@@ -64,8 +64,13 @@ export function useConnection(yachtId: string) {
 
       await apiClient.disconnect(status.connection_id);
 
-      // Update status
-      setStatus({ connected: false });
+      // SECURITY: Fully clear status to prevent stale connection_id usage
+      setStatus(null);
+
+      // Immediately refresh to ensure we get the correct state
+      setTimeout(() => {
+        refresh();
+      }, 500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to disconnect');
     } finally {
