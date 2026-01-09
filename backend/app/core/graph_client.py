@@ -111,17 +111,26 @@ class GraphClient:
         List items in OneDrive root folder
 
         Returns:
-            List of files and folders
+            List of files and folders (empty list if OneDrive is empty)
         """
         # Check if OneDrive is provisioned first
         try:
-            self.check_onedrive_provisioned()
+            drive_info = self.check_onedrive_provisioned()
+            logger.info(f"OneDrive drive info: {drive_info.get('id')}, type: {drive_info.get('driveType')}")
         except GraphAPIError as e:
             # Re-raise with helpful message
             raise
 
-        result = self._make_request("GET", "/me/drive/root/children")
-        return result.get("value", [])
+        try:
+            result = self._make_request("GET", "/me/drive/root/children")
+            return result.get("value", [])
+        except GraphAPIError as e:
+            # Handle 404 for empty/new OneDrive
+            if "404" in str(e) and "not found" in str(e).lower():
+                logger.info("OneDrive root is empty or newly provisioned, returning empty list")
+                return []
+            # Other errors should be raised
+            raise
 
     def list_folder_items(self, folder_path: str) -> List[Dict[str, Any]]:
         """
