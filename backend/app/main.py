@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="CelesteOS OneDrive Integration",
     description="Cloud-to-cloud document ingestion from OneDrive for Business",
-    version="0.1.0"
+    version="0.1.1"  # Updated to force redeploy
 )
 
 # Log CORS configuration on startup
@@ -43,7 +43,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "onedrive-integration",
-        "version": "0.1.0"
+        "version": "0.1.1"
     }
 
 
