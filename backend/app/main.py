@@ -17,13 +17,15 @@ app = FastAPI(
 cors_origins = settings.cors_origins
 logger.info(f"Configuring CORS with origins: {cors_origins}")
 
-# Configure CORS
+# Configure CORS - MUST be before routes are added
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 
