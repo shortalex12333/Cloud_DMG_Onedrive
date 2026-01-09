@@ -113,22 +113,31 @@ class GraphClient:
         Returns:
             List of files and folders (empty list if OneDrive is empty)
         """
-        # Check if OneDrive is provisioned first
-        try:
-            drive_info = self.check_onedrive_provisioned()
-            logger.info(f"OneDrive drive info: {drive_info.get('id')}, type: {drive_info.get('driveType')}")
-        except GraphAPIError as e:
-            # Re-raise with helpful message
-            raise
+        # Try multiple approaches to access OneDrive
+        # Some tenants require different endpoints
 
+        # Approach 1: Try /me/drive/root/children directly
         try:
+            logger.info("Attempting to list OneDrive files via /me/drive/root/children")
             result = self._make_request("GET", "/me/drive/root/children")
+            logger.info(f"Success! Found {len(result.get('value', []))} items")
             return result.get("value", [])
         except GraphAPIError as e:
+            logger.warning(f"Approach 1 failed: {e}")
+
             # Handle 404 for empty/new OneDrive
             if "404" in str(e) and "not found" in str(e).lower():
-                logger.info("OneDrive root is empty or newly provisioned, returning empty list")
-                return []
+                # Approach 2: Try checking if OneDrive is provisioned
+                try:
+                    logger.info("404 received, checking OneDrive provisioning via /me/drive")
+                    drive_info = self.check_onedrive_provisioned()
+                    logger.info(f"OneDrive is provisioned: {drive_info.get('id')}, returning empty list")
+                    return []  # OneDrive exists but is empty
+                except GraphAPIError as provision_error:
+                    logger.error(f"Provisioning check also failed: {provision_error}")
+                    # Re-raise the original error
+                    raise e
+
             # Other errors should be raised
             raise
 
