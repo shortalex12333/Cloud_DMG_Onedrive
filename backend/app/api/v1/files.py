@@ -1,11 +1,9 @@
 """File browsing endpoints for OneDrive"""
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional
 import logging
 
-from app.db.session import get_db
 from app.core.token_manager import get_token_manager
 from app.core.graph_client import create_graph_client, GraphAPIError
 from app.core.metadata_extractor import extract_metadata_from_onedrive_path
@@ -97,8 +95,7 @@ async def browse_onedrive(
 @router.get("/search")
 async def search_onedrive(
     connection_id: str = Query(..., description="Connection ID"),
-    query: str = Query(..., description="Search query"),
-    db: Session = Depends(get_db)
+    query: str = Query(..., description="Search query")
 ):
     """
     Search for files in OneDrive
@@ -109,7 +106,7 @@ async def search_onedrive(
         token_manager = get_token_manager()
 
         # Get valid access token
-        access_token = token_manager.get_access_token(db, connection_id)
+        access_token = token_manager.get_access_token(connection_id)
         if not access_token:
             raise HTTPException(status_code=401, detail="Failed to get valid access token")
 
@@ -174,8 +171,7 @@ async def get_file_metadata(
 async def enumerate_folders(
     connection_id: str = Query(..., description="Connection ID"),
     folder_paths: List[str] = Query(..., description="List of folder paths to enumerate"),
-    recursive: bool = Query(True, description="Recursively scan subfolders"),
-    db: Session = Depends(get_db)
+    recursive: bool = Query(True, description="Recursively scan subfolders")
 ):
     """
     Enumerate all files in specified folders
@@ -186,7 +182,7 @@ async def enumerate_folders(
         token_manager = get_token_manager()
 
         # Get valid access token
-        access_token = token_manager.get_access_token(db, connection_id)
+        access_token = token_manager.get_access_token(connection_id)
         if not access_token:
             raise HTTPException(status_code=401, detail="Failed to get valid access token")
 

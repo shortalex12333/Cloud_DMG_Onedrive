@@ -78,7 +78,7 @@ def perform_sync(
         db.commit()
 
         # Get valid access token
-        access_token = token_manager.get_access_token(db, connection_id)
+        access_token = token_manager.get_access_token(connection_id)
         if not access_token:
             logger.error(f"Failed to get access token for connection {connection_id}")
             sync_manager.complete_job(job_id, 'failed')
